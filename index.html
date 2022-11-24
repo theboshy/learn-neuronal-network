@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>SELF DRIVING CAR</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <canvas id="main-plane"></canvas>
+    <canvas id="network"></canvas>
+    <div id="verticalButtons">
+        <strong>SURVIVORS: <span id="live-generations"></span></strong>
+        <button onclick="save()">💾 guardar</button>
+        <button onclick="discard()">❌ reiniciar cerebro</button>
+        <button onclick="addHardStopObstacle()">🚨 agregar ostaculo</button>
+    </div>
+    <script src="./utils.js" charset="utf-8"></script> 
+    <script src="./controls.js" charset="utf-8"></script>
+    <script src="./sensors.js" charset="utf-8"></script>  
+    <script src="./street.js" charset="utf-8"></script>  
+    <script src="./consts.js" charset="utf-8"></script>
+    <script src="./car.js" charset="utf-8"></script>
+    <script src="./neural-network.js" charset="utf-8"></script> 
+    <script src="./network-visualizer.js" charset="utf-8"></script>   
+    <script src="./index.js" charset="utf-8"></script>
+  </body>
+</html>

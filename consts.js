@@ -1,0 +1,2 @@
+const DELTA_TIME = 60
+const INFINITY = 10000000
