@@ -10,6 +10,7 @@
     <canvas id="network"></canvas>
     <div id="verticalButtons">
         <strong>SURVIVORS: <span id="live-generations"></span></strong>
+        <strong>GENERACIÓN: <span id="generation-count">1</span></strong>
         <button onclick="save()">💾 guardar</button>
         <button onclick="discard()">❌ reiniciar cerebro</button>
         <button onclick="addHardStopObstacle()">🚨 agregar ostaculo</button>
@@ -23,5 +24,9 @@
     <script src="./neural-network.js" charset="utf-8"></script> 
     <script src="./network-visualizer.js" charset="utf-8"></script>   
     <script src="./index.js" charset="utf-8"></script>
+    <div id="generation-end-overlay">
+        <div class="overlay-content"></div>
+    </div>
+    <div id="toast"></div>
   </body>
 </html>
