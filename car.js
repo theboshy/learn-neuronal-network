@@ -133,24 +133,87 @@ class Car {
         }
     }
     
-    draw(context) {
-        if (this.damaged) {
-            context.fillStyle ="red"
-        } else {
-            context.fillStyle = this.color
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(-this.rotationAngle);
+
+        const w = this.width;
+        const h = this.height;
+
+        // Glow only for the best car
+        if (this.type === 'mainCar' && !this.damaged) {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#58a6ff';
         }
-        if (this.polygon.length > 0) {
-            context.beginPath()
-            context.moveTo(this.polygon[0].x, this.polygon[0].y)
-            for (let i = 1; i < this.polygon.length; i++) {
-                context.lineTo(this.polygon[i].x, this.polygon[i].y)
-            }
-            context.fill() 
-            if (this.sensor) {
-                if (this.sensor.car.drawSensor) {
-                    this.sensor.draw(context)
-                }
-            }
+
+        // Body color by role
+        let bodyColor;
+        if (this.damaged) {
+            bodyColor = '#f78166';
+        } else if (this.type === 'mainCar') {
+            bodyColor = '#58a6ff';
+        } else if (this.type === 'dummy') {
+            // Hard-stop obstacles keep red; regular traffic is amber
+            bodyColor = this.color === 'red' ? '#f78166' : '#d29922';
+        } else {
+            bodyColor = '#3fb950';
+        }
+
+        // Car body
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, -h / 2, w, h, 4);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+
+        if (this.damaged) {
+            // X mark for wrecked cars
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(-w / 3.5, -h / 3.5);
+            ctx.lineTo( w / 3.5,  h / 3.5);
+            ctx.moveTo( w / 3.5, -h / 3.5);
+            ctx.lineTo(-w / 3.5,  h / 3.5);
+            ctx.stroke();
+        } else {
+            // Windshield
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
+            ctx.beginPath();
+            ctx.roundRect(-w / 2 + 3, -h / 2 + 5, w - 6, h * 0.27, 2);
+            ctx.fill();
+
+            // Rear window
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.36)';
+            ctx.beginPath();
+            ctx.roundRect(-w / 2 + 3, h / 2 - h * 0.22, w - 6, h * 0.17, 2);
+            ctx.fill();
+
+            // Roof panel (subtle highlight)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+            ctx.beginPath();
+            ctx.roundRect(-w / 2 + 4, -h / 2 + h * 0.27 + 7, w - 8, h * 0.34, 1);
+            ctx.fill();
+        }
+
+        // Wheels — all four in one path batch
+        const ww = 5;
+        const wh = 9;
+        ctx.fillStyle = '#0a0d10';
+        ctx.beginPath();
+        ctx.roundRect(-w / 2 - ww + 1, -h / 2 + 5,      ww, wh, 1); // front-left
+        ctx.roundRect( w / 2 - 1,       -h / 2 + 5,      ww, wh, 1); // front-right
+        ctx.roundRect(-w / 2 - ww + 1,   h / 2 - 5 - wh, ww, wh, 1); // rear-left
+        ctx.roundRect( w / 2 - 1,         h / 2 - 5 - wh, ww, wh, 1); // rear-right
+        ctx.fill();
+
+        ctx.restore();
+
+        // Sensor rays drawn in world space (after restore)
+        if (this.sensor && this.sensor.car.drawSensor) {
+            this.sensor.draw(ctx);
         }
     }
 }

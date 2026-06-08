@@ -85,33 +85,21 @@ class Sensors {
                 if (this.readings[i]) {
                     end = this.readings[i]
                 }
-                context.beginPath()
-                context.lineWidth = 2
-                context.strokeStyle = "yellow"
-                context.moveTo(
-                    this.rays[i][0].x,
-                    this.rays[i][0].y
-                )
-                context.lineTo(
-                    end.x,
-                    end.y
-                )
+                // Active portion: bright yellow-green
+                context.beginPath();
+                context.lineWidth   = 1.5;
+                context.strokeStyle = 'rgba(255, 240, 70, 0.85)';
+                context.moveTo(this.rays[i][0].x, this.rays[i][0].y);
+                context.lineTo(end.x, end.y);
+                context.stroke();
 
-                context.stroke()
-
-                context.beginPath()
-                context.lineWidth = 2
-                context.strokeStyle = "black"
-                context.moveTo(
-                    this.rays[i][1].x,
-                    this.rays[i][1].y
-                )
-                context.lineTo(
-                    end.x,
-                    end.y
-                )
-
-                context.stroke()
+                // Dead portion (beyond obstacle): muted red
+                context.beginPath();
+                context.lineWidth   = 1.5;
+                context.strokeStyle = 'rgba(247, 129, 102, 0.45)';
+                context.moveTo(this.rays[i][1].x, this.rays[i][1].y);
+                context.lineTo(end.x, end.y);
+                context.stroke();
             }   
         }
     }

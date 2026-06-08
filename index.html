@@ -2,31 +2,71 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
-    <title>SELF DRIVING CAR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Self-Driving</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <canvas id="main-plane"></canvas>
     <canvas id="network"></canvas>
-    <div id="verticalButtons">
-        <strong>SURVIVORS: <span id="live-generations"></span></strong>
-        <strong>GENERACIÓN: <span id="generation-count">1</span></strong>
-        <button onclick="save()">💾 guardar</button>
-        <button onclick="discard()">❌ reiniciar cerebro</button>
-        <button onclick="addHardStopObstacle()">🚨 agregar ostaculo</button>
+
+    <div id="panel">
+      <div class="panel-header">
+        <span class="panel-logo">◈ NEURAL AI</span>
+        <span class="panel-version">self-driving simulation</span>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-title">Simulation</div>
+        <div class="stat-row">
+          <span class="stat-label">GENERATION</span>
+          <span class="stat-value" id="generation-count">1</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">ALIVE</span>
+          <span class="stat-value" id="live-generations">0</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="survivors-progress"></div>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">TIME</span>
+          <span class="stat-value" id="gen-timer">0:00</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-title">Controls</div>
+        <button onclick="save()">
+          <span class="btn-icon">▶</span>Save Brain
+        </button>
+        <button onclick="discard()">
+          <span class="btn-icon">↺</span>Reset Brain
+        </button>
+        <button onclick="addHardStopObstacle()">
+          <span class="btn-icon">+</span>Add Obstacle
+        </button>
+      </div>
+
+      <span class="panel-hint">ESC → pause / resume</span>
     </div>
-    <script src="./utils.js" charset="utf-8"></script> 
-    <script src="./controls.js" charset="utf-8"></script>
-    <script src="./sensors.js" charset="utf-8"></script>  
-    <script src="./street.js" charset="utf-8"></script>  
-    <script src="./consts.js" charset="utf-8"></script>
-    <script src="./car.js" charset="utf-8"></script>
-    <script src="./neural-network.js" charset="utf-8"></script> 
-    <script src="./network-visualizer.js" charset="utf-8"></script>   
-    <script src="./index.js" charset="utf-8"></script>
+
     <div id="generation-end-overlay">
-        <div class="overlay-content"></div>
+      <div class="overlay-content"></div>
     </div>
     <div id="toast"></div>
+
+    <script src="./utils.js" charset="utf-8"></script>
+    <script src="./controls.js" charset="utf-8"></script>
+    <script src="./sensors.js" charset="utf-8"></script>
+    <script src="./street.js" charset="utf-8"></script>
+    <script src="./consts.js" charset="utf-8"></script>
+    <script src="./car.js" charset="utf-8"></script>
+    <script src="./neural-network.js" charset="utf-8"></script>
+    <script src="./network-visualizer.js" charset="utf-8"></script>
+    <script src="./index.js" charset="utf-8"></script>
   </body>
 </html>

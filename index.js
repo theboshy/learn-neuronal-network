@@ -13,7 +13,7 @@ let canvas = document.getElementById("main-plane");
 canvas.width = 200;
 
 let networkCanvas = document.getElementById("network");
-networkCanvas.width = 300;
+networkCanvas.width = 320;
 
 const pxM = 12.5
 const secondsInHour = 3600
@@ -43,6 +43,7 @@ generationStartTime = Date.now()
 animate()
 generateNewTrafficCar()
 removeDeathgenerations()
+startStatsUpdater()
 
 function save() {
     const brain = mainCar ? mainCar.brain : bestBrain
@@ -225,6 +226,34 @@ function addHardStopObstacle() {
     if (!mainCar) return
     let newCar = new Car(mainCar.x, mainCar.y - 500, 30, 50, "dummy", 1, "red", false)
     traffic.push(newCar)
+}
+
+function startStatsUpdater() {
+    const timerEl    = document.getElementById('gen-timer')
+    const progressEl = document.getElementById('survivors-progress')
+
+    setInterval(() => {
+        // Timer
+        const elapsed  = Math.floor((Date.now() - generationStartTime) / 1000)
+        const minutes  = Math.floor(elapsed / 60)
+        const seconds  = elapsed % 60
+        if (timerEl) {
+            timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`
+        }
+
+        // Survivor progress bar
+        if (progressEl && cars) {
+            const pct = Math.max(0, (cars.length / CAR_GENERATION_NUMBER) * 100)
+            progressEl.style.width = pct + '%'
+            if (pct < 15) {
+                progressEl.style.backgroundColor = 'var(--red)'
+            } else if (pct < 45) {
+                progressEl.style.backgroundColor = 'var(--amber)'
+            } else {
+                progressEl.style.backgroundColor = 'var(--green)'
+            }
+        }
+    }, 500)
 }
 
 document.onkeydown = (event) => {
