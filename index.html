@@ -20,6 +20,19 @@
       </div>
 
       <div class="panel-section">
+        <div class="section-title">Vehicle</div>
+        <div class="model-tabs">
+          <button class="model-tab" data-model="car"  onclick="setModel('car')">🚗</button>
+          <button class="model-tab" data-model="moto" onclick="setModel('moto')">🏍️</button>
+          <button class="model-tab" data-model="bus"  onclick="setModel('bus')">🚌</button>
+        </div>
+        <div class="stat-row" style="margin-top:4px">
+          <span class="stat-label">USING</span>
+          <span class="stat-value" id="current-model-name" style="font-size:11px">Auto</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
         <div class="section-title">Simulation</div>
         <div class="stat-row">
           <span class="stat-label">GENERATION</span>

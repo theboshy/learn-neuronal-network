@@ -1,10 +1,11 @@
 class Car {
-    constructor(x, y, width, height, type="dummy", maxSpeed = 3, color = "green", drawSensor = false) {
+    constructor(x, y, width, height, type="dummy", maxSpeed = 3, color = "green", drawSensor = false, model = 'car') {
         this.x = x
         this.y = y
         this.color = color
         this.width = width
         this.height = height
+        this.model = model
         this.speed = 0
         this.acceleration = 0.2
         this.maxSpeed = maxSpeed
@@ -16,7 +17,7 @@ class Car {
         this.drawSensor = drawSensor
         this.damaged = false
         this.controls = new Controls(this.type);
-        this.sensor = new Sensors(this)   
+        this.sensor = new Sensors(this)
         this.brainConected = this.type != "dummy"
         this.brain = new NeuralNetwork(
             [this.sensor.rayCount,  6, 4]
@@ -25,8 +26,10 @@ class Car {
         // Lane-change state (only used by dummy traffic)
         this.targetLane = null
         this.turnSignal = null   // 'left' | 'right' | null
+        // First check is fast so traffic has time to decide before being overtaken;
+        // subsequent checks stay on the normal 3-7s cadence in #maybeChangeLane
         this.nextLaneCheckTime = (type === 'dummy' && color !== 'red')
-            ? Date.now() + getRandomNumberBetween(1500, 4500)
+            ? Date.now() + getRandomNumberBetween(400, 2000)
             : Infinity
     }
     
@@ -116,15 +119,16 @@ class Car {
 
     #maybeChangeLane() {
         if (this.type !== 'dummy') return
+        if (this.brainConected) return              // demoted ex-mainCars: brain-driven, no manual steering
         if (this.color === 'red') return            // hard-stop obstacles stay put
         if (this.targetLane !== null) return        // already mid-change
         if (Date.now() < this.nextLaneCheckTime) return
         if (typeof street === 'undefined') return
 
-        this.nextLaneCheckTime = Date.now() + getRandomNumberBetween(3000, 7000)
+        this.nextLaneCheckTime = Date.now() + getRandomNumberBetween(2500, 6000)
 
-        // 35% chance to actually change lanes when checking
-        if (Math.random() > 0.35) return
+        // 50% chance to actually change lanes when checking
+        if (Math.random() > 0.5) return
 
         const currentLane = street.getLaneFromX(this.x)
         const dir = Math.random() > 0.5 ? 1 : -1
@@ -245,35 +249,89 @@ class Car {
             ctx.moveTo( w / 3.5, -h / 3.5);
             ctx.lineTo(-w / 3.5,  h / 3.5);
             ctx.stroke();
+        } else if (this.model === 'moto') {
+            // Seat (dark center stripe)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            ctx.beginPath();
+            ctx.roundRect(-w / 2 + 2, -h * 0.18, w - 4, h * 0.45, 2);
+            ctx.fill();
+            // Handlebar bar at front
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.beginPath();
+            ctx.roundRect(-w / 2 - 1.5, -h / 2 + 4, w + 3, 2, 1);
+            ctx.fill();
+            // Headlight
+            ctx.fillStyle = 'rgba(255, 240, 180, 0.4)';
+            ctx.beginPath();
+            ctx.arc(0, -h / 2 + 2, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (this.model === 'bus') {
+            // Front windshield (short)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.beginPath();
+            ctx.roundRect(-w / 2 + 3, -h / 2 + 5, w - 6, h * 0.10, 2);
+            ctx.fill();
+            // Side window strips
+            const windowCount = 5;
+            const stripTop = -h / 2 + h * 0.18;
+            const stripBottom = h / 2 - h * 0.18;
+            const stripH = (stripBottom - stripTop) / windowCount;
+            for (let i = 0; i < windowCount; i++) {
+                const y = stripTop + i * stripH + 1;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
+                ctx.beginPath();
+                ctx.roundRect(-w / 2 + 2, y, 4, stripH - 2, 1);
+                ctx.roundRect( w / 2 - 6, y, 4, stripH - 2, 1);
+                ctx.fill();
+            }
+            // Rear bumper hint
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.beginPath();
+            ctx.roundRect(-w / 2 + 4, h / 2 - 6, w - 8, 3, 1);
+            ctx.fill();
         } else {
-            // Windshield
+            // Car (default): windshield + rear window + roof strip
             ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
             ctx.beginPath();
             ctx.roundRect(-w / 2 + 3, -h / 2 + 5, w - 6, h * 0.27, 2);
             ctx.fill();
 
-            // Rear window
             ctx.fillStyle = 'rgba(0, 0, 0, 0.36)';
             ctx.beginPath();
             ctx.roundRect(-w / 2 + 3, h / 2 - h * 0.22, w - 6, h * 0.17, 2);
             ctx.fill();
 
-            // Roof panel (subtle highlight)
             ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
             ctx.beginPath();
             ctx.roundRect(-w / 2 + 4, -h / 2 + h * 0.27 + 7, w - 8, h * 0.34, 1);
             ctx.fill();
         }
 
-        // Wheels — all four in one path batch
-        const ww = 5;
-        const wh = 9;
+        // Wheels — per-model layout, single batched path
         ctx.fillStyle = '#0a0d10';
         ctx.beginPath();
-        ctx.roundRect(-w / 2 - ww + 1, -h / 2 + 5,      ww, wh, 1); // front-left
-        ctx.roundRect( w / 2 - 1,       -h / 2 + 5,      ww, wh, 1); // front-right
-        ctx.roundRect(-w / 2 - ww + 1,   h / 2 - 5 - wh, ww, wh, 1); // rear-left
-        ctx.roundRect( w / 2 - 1,         h / 2 - 5 - wh, ww, wh, 1); // rear-right
+        if (this.model === 'moto') {
+            const ww = 4, wh = 7;
+            ctx.roundRect(-ww / 2, -h / 2 + 1,      ww, wh, 1.5); // front
+            ctx.roundRect(-ww / 2,  h / 2 - 1 - wh, ww, wh, 1.5); // rear
+        } else if (this.model === 'bus') {
+            const ww = 5, wh = 11;
+            // Front axle
+            ctx.roundRect(-w / 2 - ww + 1, -h / 2 + 8, ww, wh, 1);
+            ctx.roundRect( w / 2 - 1,       -h / 2 + 8, ww, wh, 1);
+            // Rear dual axles
+            ctx.roundRect(-w / 2 - ww + 1, h / 2 - 26, ww, wh, 1);
+            ctx.roundRect( w / 2 - 1,       h / 2 - 26, ww, wh, 1);
+            ctx.roundRect(-w / 2 - ww + 1, h / 2 - 11, ww, wh, 1);
+            ctx.roundRect( w / 2 - 1,       h / 2 - 11, ww, wh, 1);
+        } else {
+            // Car: 4 corner wheels
+            const ww = 5, wh = 9;
+            ctx.roundRect(-w / 2 - ww + 1, -h / 2 + 5,      ww, wh, 1);
+            ctx.roundRect( w / 2 - 1,       -h / 2 + 5,      ww, wh, 1);
+            ctx.roundRect(-w / 2 - ww + 1,   h / 2 - 5 - wh, ww, wh, 1);
+            ctx.roundRect( w / 2 - 1,         h / 2 - 5 - wh, ww, wh, 1);
+        }
         ctx.fill();
 
         // Turn signal (blinking amber on the side of the turn)

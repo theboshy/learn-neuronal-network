@@ -28,10 +28,17 @@ const networkContext = networkCanvas.getContext("2d")
 const street = new Street(canvas.width / 2, ROAD_WIDTH)
 let mainCar = null
 
+// ─── Current vehicle model (persisted) ────────────────────────────────
+let currentModel = localStorage.getItem(SELECTED_MODEL_KEY) || 'car'
+if (!VEHICLE_MODELS[currentModel]) currentModel = 'car'
+
 let cars = generateCars(CAR_GENERATION_NUMBER)
 let traffic = []
 
-// ─── Load saved brain (backwards compatible) ──────────────────────────
+// Migrate legacy 'best-brain' key to 'best-brain-car' on first run
+migrateLegacyBrainKey()
+
+// ─── Load saved brain for current model ───────────────────────────────
 const savedPayload = loadSavedBrain()
 if (savedPayload) {
     for (let i = 0; i < cars.length; i++) {
@@ -45,16 +52,28 @@ if (savedPayload) {
     document.getElementById("generation-count").textContent = generationCount
 }
 
+syncModelUI()
 generationStartTime = Date.now()
 animate()
 generateNewTrafficCar()
 removeDeathgenerations()
 startStatsUpdater()
 
-// ─── Persistence ─────────────────────────────────────────────────────
+// ─── Persistence (per-model) ─────────────────────────────────────────
 
-function loadSavedBrain() {
-    const raw = localStorage.getItem("best-brain")
+function migrateLegacyBrainKey() {
+    const legacy = localStorage.getItem("best-brain")
+    if (!legacy) return
+    // Only migrate if the car-model key isn't already set
+    if (!localStorage.getItem(VEHICLE_MODELS.car.storageKey)) {
+        localStorage.setItem(VEHICLE_MODELS.car.storageKey, legacy)
+    }
+    localStorage.removeItem("best-brain")
+}
+
+function loadSavedBrain(modelId = currentModel) {
+    const key = VEHICLE_MODELS[modelId].storageKey
+    const raw = localStorage.getItem(key)
     if (!raw) return null
     try {
         const parsed = JSON.parse(raw)
@@ -62,15 +81,15 @@ function loadSavedBrain() {
         if (Array.isArray(parsed.levels)) {
             return { brain: parsed, generation: 1 }
         }
-        // New format: { brain, generation }
         return parsed
     } catch {
         return null
     }
 }
 
-function persistBrain(brain, generation) {
-    localStorage.setItem("best-brain", JSON.stringify({
+function persistBrain(brain, generation, modelId = currentModel) {
+    const key = VEHICLE_MODELS[modelId].storageKey
+    localStorage.setItem(key, JSON.stringify({
         brain: brain,
         generation: generation,
         savedAt: Date.now()
@@ -79,20 +98,22 @@ function persistBrain(brain, generation) {
 
 function save() {
     const brain = mainCar ? mainCar.brain : bestBrain
+    const m = VEHICLE_MODELS[currentModel]
     if (brain) {
         persistBrain(brain, generationCount)
         bestBrain = JSON.parse(JSON.stringify(brain))
-        showToast(`✅ Cerebro guardado · Gen ${generationCount}`)
+        showToast(`✅ Cerebro de ${m.label} guardado · Gen ${generationCount}`)
     } else {
         showToast("⚠️ No hay cerebro para guardar aún")
     }
 }
 
 function discard() {
-    const confirmed = window.confirm("¿Estás seguro? Esto borrará el mejor cerebro guardado y reiniciará las generaciones desde cero con cerebros aleatorios.")
+    const m = VEHICLE_MODELS[currentModel]
+    const confirmed = window.confirm(`¿Borrar el cerebro de ${m.label}? Se reiniciarán las generaciones desde cero con cerebros aleatorios para este vehículo.`)
     if (!confirmed) return
 
-    localStorage.removeItem("best-brain")
+    localStorage.removeItem(m.storageKey)
     bestBrain = null
     generationCount = 1
     document.getElementById("generation-count").textContent = 1
@@ -103,7 +124,52 @@ function discard() {
     generationStartTime = Date.now()
     generationResetting = false
 
-    showToast("❌ Cerebro reiniciado — nueva generación con cerebros aleatorios")
+    showToast(`❌ Cerebro de ${m.label} reiniciado`)
+}
+
+// ─── Model switcher ──────────────────────────────────────────────────
+
+function syncModelUI() {
+    const m = VEHICLE_MODELS[currentModel]
+    const nameEl = document.getElementById('current-model-name')
+    if (nameEl) nameEl.textContent = m.label
+    document.querySelectorAll('.model-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.model === currentModel)
+    })
+}
+
+function setModel(modelId) {
+    if (!VEHICLE_MODELS[modelId]) return
+    if (modelId === currentModel) return
+    if (generationResetting) return
+
+    currentModel = modelId
+    localStorage.setItem(SELECTED_MODEL_KEY, modelId)
+    const m = VEHICLE_MODELS[modelId]
+
+    generationResetting = true
+    traffic = []
+    cars = generateCars(CAR_GENERATION_NUMBER)
+    generationStartTime = Date.now()
+
+    const saved = loadSavedBrain()
+    if (saved) {
+        for (let i = 0; i < cars.length; i++) {
+            cars[i].brain = JSON.parse(JSON.stringify(saved.brain))
+            if (i !== 0) NeuralNetwork.mutate(cars[i].brain, 0.1)
+        }
+        bestBrain = JSON.parse(JSON.stringify(saved.brain))
+        generationCount = saved.generation || 1
+    } else {
+        bestBrain = null
+        generationCount = 1
+    }
+
+    document.getElementById("generation-count").textContent = generationCount
+    syncModelUI()
+    generationResetting = false
+
+    showToast(`${m.icon} ${m.label} · Gen ${generationCount}`)
 }
 
 function showToast(message) {
@@ -118,11 +184,12 @@ function showToast(message) {
 // ─── Generation lifecycle ────────────────────────────────────────────
 
 function generateCars(n) {
-    const newMain = new Car(street.getLaneCenter(1), -20, 30, 50, "mainCar", 3, "green", true)
+    const m = VEHICLE_MODELS[currentModel]
+    const newMain = new Car(street.getLaneCenter(1), -20, m.width, m.height, "mainCar", m.maxSpeed, "green", true, m.id)
     mainCar = newMain
     const arr = [newMain]
     for (let i = 1; i <= n; i++) {
-        arr.push(new Car(street.getLaneCenter(1), -20, 30, 50, "generations", 3, "green", false))
+        arr.push(new Car(street.getLaneCenter(1), -20, m.width, m.height, "generations", m.maxSpeed, "green", false, m.id))
     }
     return arr
 }
@@ -144,6 +211,10 @@ function updateTheBestCar() {
             mainCar.type = "dummy"
             mainCar.drawSensor = false
             mainCar.color = "green"
+            // Block lane-change logic on demoted brain-driven car
+            mainCar.targetLane = null
+            mainCar.turnSignal = null
+            mainCar.nextLaneCheckTime = Infinity
         }
         mainCar = candidate
         mainCar.drawSensor = true
@@ -195,6 +266,8 @@ function resetGeneration() {
             }
         }
         bestBrain = JSON.parse(JSON.stringify(payload.brain))
+    } else {
+        bestBrain = null
     }
     hideGenerationOverlay()
     generationResetting = false
