@@ -4,11 +4,11 @@ const INFINITY = 10000000
 const VEHICLE_MODELS = {
     car: {
         id: 'car',
-        label: 'Auto',
+        label: 'Car',
         icon: '🚗',
         width: 30,
         height: 50,
-        maxSpeed: 3,
+        maxSpeed: 2,
         storageKey: 'best-brain-car'
     },
     moto: {

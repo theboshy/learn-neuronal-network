@@ -102,15 +102,15 @@ function save() {
     if (brain) {
         persistBrain(brain, generationCount)
         bestBrain = JSON.parse(JSON.stringify(brain))
-        showToast(`✅ Cerebro de ${m.label} guardado · Gen ${generationCount}`)
+        showToast(`✅ ${m.label} brain saved · Gen ${generationCount}`)
     } else {
-        showToast("⚠️ No hay cerebro para guardar aún")
+        showToast("⚠️ No brain to save yet")
     }
 }
 
 function discard() {
     const m = VEHICLE_MODELS[currentModel]
-    const confirmed = window.confirm(`¿Borrar el cerebro de ${m.label}? Se reiniciarán las generaciones desde cero con cerebros aleatorios para este vehículo.`)
+    const confirmed = window.confirm(`Clear the ${m.label} brain? Training will restart from scratch with random brains for this vehicle.`)
     if (!confirmed) return
 
     localStorage.removeItem(m.storageKey)
@@ -124,7 +124,7 @@ function discard() {
     generationStartTime = Date.now()
     generationResetting = false
 
-    showToast(`❌ Cerebro de ${m.label} reiniciado`)
+    showToast(`❌ ${m.label} brain cleared`)
 }
 
 // ─── Model switcher ──────────────────────────────────────────────────
@@ -276,9 +276,9 @@ function resetGeneration() {
 function showGenerationOverlay(died, next) {
     const el = document.getElementById("generation-end-overlay")
     el.querySelector(".overlay-content").innerHTML =
-        `<p>Generación <strong>${died}</strong> terminada</p>` +
-        `<p>Cerebro guardado en localStorage</p>` +
-        `<p>Iniciando generación <strong>${next}</strong>...</p>`
+        `<p>Generation <strong>${died}</strong> ended</p>` +
+        `<p>Brain saved to localStorage</p>` +
+        `<p>Starting generation <strong>${next}</strong>...</p>`
     el.style.display = "flex"
 }
 
@@ -404,10 +404,12 @@ function animate(time) {
     requestAnimationFrame(animate)
 }
 
-function addHardStopObstacle() {
+function addObstacle() {
     if (!mainCar) return
-    let newCar = new Car(mainCar.x, mainCar.y - 500, 30, 50, "dummy", 1, "red", false)
-    traffic.push(newCar)
+    const lane = getRandomNumberBetween(0, street.laneCount - 1)
+    const x = street.getLaneCenter(lane)
+    const y = mainCar.y - getRandomNumberBetween(400, 700)
+    traffic.push(Obstacle.createRandom(x, y))
 }
 
 // ─── Stats UI updater ────────────────────────────────────────────────

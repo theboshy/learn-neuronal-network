@@ -32,26 +32,48 @@ Every generation, 1000 cars start at the same position with mutated copies of th
 
 ## Controls
 
-| Action            | How                          |
-|-------------------|------------------------------|
-| Save best brain   | Sidebar → **Save Brain**     |
-| Reset training    | Sidebar → **Reset Brain**    |
-| Drop obstacle     | Sidebar → **Add Obstacle**   |
-| Pause / resume    | `ESC`                        |
+| Action               | How                          |
+|----------------------|------------------------------|
+| Switch vehicle model | Sidebar → **Vehicle** tabs   |
+| Save best brain      | Sidebar → **Save Brain**     |
+| Reset training       | Sidebar → **Reset Brain**    |
+| Spawn random hazard  | Sidebar → **Add Obstacle**   |
+| Pause / resume       | `ESC`                        |
+
+## Vehicle models
+
+Three trainable vehicles, each with its own brain stored separately. Switching the tab resets the simulation and loads that vehicle's saved brain (or starts fresh).
+
+| Model    | Size      | Max speed |
+|----------|-----------|-----------|
+| 🚗 Car   | 30 × 50   | 3.0       |
+| 🏍 Moto  | 16 × 38   | 3.6       |
+| 🚌 Bus   | 38 × 95   | 2.4       |
+
+## Hazards
+
+**Add Obstacle** spawns a random hazard in a random lane ahead of the best car:
+- **Pothole** — small dark crater (26 × 20 hitbox)
+- **Wreck + cones** — crashed car with traffic cones (38 × 52 hitbox)
+- **Burning trash** — pile with animated flames (22 × 24 hitbox)
+
+All hazards expose a polygon, so raycast sensors detect them just like other vehicles.
 
 ## Project layout
 
 ```
 index.html               page + panel markup
 style.css                dark terminal theme
-index.js                 main loop, generation lifecycle
-car.js                   car shape, physics, lane changes
+index.js                 main loop, generation lifecycle, model switcher
+car.js                   car/moto/bus shape, physics, lane changes
+obstacle.js              pothole / wreck / burning-trash hazards
 sensors.js               raycast sensors
 street.js                road, lanes, roadside decoration
 neural-network.js        feed-forward + mutation
 network-visualizer.js    live network diagram
 controls.js              input flags
-utils.js / consts.js     helpers
+utils.js                 lerp, intersection, polygon collision
+consts.js                deltas, INFINITY, VEHICLE_MODELS
 ```
 
 ## Tech notes
