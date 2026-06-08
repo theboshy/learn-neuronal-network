@@ -1,6 +1,8 @@
 let pause = false
+let pauseStartTime = 0
+let animating = false
 
-const CAR_GENERATION_NUMBER = 2000
+const CAR_GENERATION_NUMBER = 1000
 
 let generationCount = 1
 let bestBrain = null
@@ -10,11 +12,12 @@ let generationStartTime = Date.now()
 const GRACE_PERIOD_MS = 3000
 
 let canvas = document.getElementById("main-plane");
-canvas.width = 200;
+canvas.width = 280;
 
 let networkCanvas = document.getElementById("network");
 networkCanvas.width = 320;
 
+const ROAD_WIDTH = 180
 const pxM = 12.5
 const secondsInHour = 3600
 const mInKm = 2000
@@ -22,21 +25,24 @@ const mInKm = 2000
 const canvasContext = canvas.getContext("2d")
 const networkContext = networkCanvas.getContext("2d")
 
-const street = new Street(canvas.width / 2, canvas.width * 0.9)
+const street = new Street(canvas.width / 2, ROAD_WIDTH)
 let mainCar = null
 
 let cars = generateCars(CAR_GENERATION_NUMBER)
 let traffic = []
 
-const savedBrainInit = localStorage.getItem("best-brain")
-if (savedBrainInit) {
+// ─── Load saved brain (backwards compatible) ──────────────────────────
+const savedPayload = loadSavedBrain()
+if (savedPayload) {
     for (let i = 0; i < cars.length; i++) {
-        cars[i].brain = JSON.parse(savedBrainInit)
+        cars[i].brain = JSON.parse(JSON.stringify(savedPayload.brain))
         if (i !== 0) {
             NeuralNetwork.mutate(cars[i].brain, 0.1)
         }
     }
-    bestBrain = JSON.parse(savedBrainInit)
+    bestBrain = JSON.parse(JSON.stringify(savedPayload.brain))
+    generationCount = savedPayload.generation || 1
+    document.getElementById("generation-count").textContent = generationCount
 }
 
 generationStartTime = Date.now()
@@ -45,12 +51,38 @@ generateNewTrafficCar()
 removeDeathgenerations()
 startStatsUpdater()
 
+// ─── Persistence ─────────────────────────────────────────────────────
+
+function loadSavedBrain() {
+    const raw = localStorage.getItem("best-brain")
+    if (!raw) return null
+    try {
+        const parsed = JSON.parse(raw)
+        // Old format: brain object with `levels` array directly
+        if (Array.isArray(parsed.levels)) {
+            return { brain: parsed, generation: 1 }
+        }
+        // New format: { brain, generation }
+        return parsed
+    } catch {
+        return null
+    }
+}
+
+function persistBrain(brain, generation) {
+    localStorage.setItem("best-brain", JSON.stringify({
+        brain: brain,
+        generation: generation,
+        savedAt: Date.now()
+    }))
+}
+
 function save() {
     const brain = mainCar ? mainCar.brain : bestBrain
     if (brain) {
-        localStorage.setItem("best-brain", JSON.stringify(brain))
+        persistBrain(brain, generationCount)
         bestBrain = JSON.parse(JSON.stringify(brain))
-        showToast("✅ Cerebro guardado correctamente")
+        showToast(`✅ Cerebro guardado · Gen ${generationCount}`)
     } else {
         showToast("⚠️ No hay cerebro para guardar aún")
     }
@@ -83,6 +115,8 @@ function showToast(message) {
     setTimeout(() => toast.classList.remove("visible"), 2000)
 }
 
+// ─── Generation lifecycle ────────────────────────────────────────────
+
 function generateCars(n) {
     const newMain = new Car(street.getLaneCenter(1), -20, 30, 50, "mainCar", 3, "green", true)
     mainCar = newMain
@@ -94,20 +128,30 @@ function generateCars(n) {
 }
 
 function updateTheBestCar() {
-    if (cars && cars.length > 0) {
-        const candidate = cars.find(c => c.y === Math.min(...cars.map(c => c.y)))
-        if (candidate && candidate !== mainCar) {
-            if (mainCar) {
-                mainCar.type = "dummy"
-                mainCar.drawSensor = false
-                mainCar.color = "green"
-            }
-            mainCar = candidate
-            mainCar.drawSensor = true
-            mainCar.type = "mainCar"
-            mainCar.color = "blue"
+    if (!cars || cars.length === 0) return
+
+    let bestY = Infinity
+    let candidate = null
+    for (let i = 0; i < cars.length; i++) {
+        if (cars[i].y < bestY) {
+            bestY = cars[i].y
+            candidate = cars[i]
         }
-        if (mainCar && mainCar.brain) {
+    }
+
+    if (candidate && candidate !== mainCar) {
+        if (mainCar) {
+            mainCar.type = "dummy"
+            mainCar.drawSensor = false
+            mainCar.color = "green"
+        }
+        mainCar = candidate
+        mainCar.drawSensor = true
+        mainCar.type = "mainCar"
+        mainCar.color = "blue"
+
+        // Only clone the brain on promotion — saves ~60 clones/sec
+        if (mainCar.brain) {
             bestBrain = JSON.parse(JSON.stringify(mainCar.brain))
         }
     }
@@ -115,7 +159,7 @@ function updateTheBestCar() {
 
 function generateNewTrafficCar() {
     setInterval(() => {
-        if (!mainCar || generationResetting) return
+        if (!mainCar || generationResetting || pause) return
         traffic.push(
             new Car(street.getLaneCenter(getRandomNumberBetween(0, street.laneCount)), mainCar.y - getRandomNumberBetween(500, 700), 30, 50, "dummy", 1, "purple", false)
         )
@@ -125,11 +169,15 @@ function generateNewTrafficCar() {
 function triggerGenerationReset() {
     if (generationResetting) return
     generationResetting = true
-    if (bestBrain) {
-        localStorage.setItem("best-brain", JSON.stringify(bestBrain))
-    }
+
     generationCount++
     document.getElementById("generation-count").textContent = generationCount
+
+    // Save brain with the newly-incremented generation number
+    if (bestBrain) {
+        persistBrain(bestBrain, generationCount)
+    }
+
     showGenerationOverlay(generationCount - 1, generationCount)
     setTimeout(resetGeneration, 2500)
 }
@@ -138,15 +186,15 @@ function resetGeneration() {
     traffic = []
     cars = generateCars(CAR_GENERATION_NUMBER)
     generationStartTime = Date.now()
-    const saved = localStorage.getItem("best-brain")
-    if (saved) {
+    const payload = loadSavedBrain()
+    if (payload) {
         for (let i = 0; i < cars.length; i++) {
-            cars[i].brain = JSON.parse(saved)
+            cars[i].brain = JSON.parse(JSON.stringify(payload.brain))
             if (i !== 0) {
                 NeuralNetwork.mutate(cars[i].brain, 0.1)
             }
         }
-        bestBrain = JSON.parse(saved)
+        bestBrain = JSON.parse(JSON.stringify(payload.brain))
     }
     hideGenerationOverlay()
     generationResetting = false
@@ -173,6 +221,7 @@ function removeOldTraffic() {
 
 function removeDeathgenerations() {
     setInterval(() => {
+        if (pause) return
         if (Date.now() - generationStartTime < GRACE_PERIOD_MS) return
         if (generationResetting) return
         if (mainCar) {
@@ -184,42 +233,102 @@ function removeDeathgenerations() {
     }, 2000)
 }
 
+// ─── Main render loop ────────────────────────────────────────────────
+
 function animate(time) {
-    if (!pause) {
-        canvas.height = window.innerHeight;
-        networkCanvas.height = window.innerHeight;
-
-        const refY = mainCar ? mainCar.y : lastKnownY
-
-        canvasContext.save()
-        canvasContext.translate(0, -refY + canvas.height * 0.7)
-        street.draw(canvasContext)
-        removeOldTraffic()
-
-        for (let i = 0; i < traffic.length; i++) {
-            traffic[i].update(street.borders, [])
-            traffic[i].draw(canvasContext)
-        }
-
-        for (let i = 0; i < cars.length; i++) {
-            canvasContext.globalAlpha = cars[i].type === "mainCar" ? 1 : 0.2
-            cars[i].update(street.borders, traffic)
-            cars[i].draw(canvasContext)
-        }
-
-        if (mainCar) {
-            lastKnownY = mainCar.y
-            updateTheBestCar()
-        }
-
-        canvasContext.restore()
-
-        networkContext.lineDashOffset = -time / 50
-        Visualizer.drawNetwork(networkContext, mainCar ? mainCar.brain : bestBrain)
-
-        document.getElementById("live-generations").innerHTML = cars.length
-        requestAnimationFrame(animate)
+    if (pause) {
+        animating = false
+        return
     }
+    animating = true
+
+    canvas.height = window.innerHeight;
+    networkCanvas.height = window.innerHeight;
+
+    const refY = mainCar ? mainCar.y : lastKnownY
+
+    canvasContext.save()
+    canvasContext.translate(0, -refY + canvas.height * 0.7)
+
+    // Road surface + lanes
+    street.draw(canvasContext)
+
+    // Roadside decoration (light posts, bushes)
+    street.drawRoadside(canvasContext, refY, canvas.height)
+
+    removeOldTraffic()
+
+    // Update + draw traffic individually (small count, full detail)
+    for (let i = 0; i < traffic.length; i++) {
+        traffic[i].update(street.borders, [])
+        traffic[i].draw(canvasContext)
+    }
+
+    // Update ALL cars (physics) + collect polygons for batched ghost rendering
+    const cullTop    = refY - canvas.height * 0.85
+    const cullBottom = refY + canvas.height * 0.45
+
+    const liveGhosts    = []
+    const damagedGhosts = []
+
+    for (let i = 0; i < cars.length; i++) {
+        const car = cars[i]
+        car.update(street.borders, traffic)
+
+        if (car === mainCar) continue
+        if (car.y < cullTop || car.y > cullBottom) continue
+        if (car.polygon.length < 4) continue
+
+        if (car.damaged) damagedGhosts.push(car.polygon)
+        else             liveGhosts.push(car.polygon)
+    }
+
+    // ── Batched ghost rendering ──────────────────────────────────────
+    if (liveGhosts.length > 0) {
+        canvasContext.globalAlpha = 0.20
+        canvasContext.fillStyle   = '#3fb950'
+        canvasContext.beginPath()
+        for (let i = 0; i < liveGhosts.length; i++) {
+            const p = liveGhosts[i]
+            canvasContext.moveTo(p[0].x, p[0].y)
+            canvasContext.lineTo(p[1].x, p[1].y)
+            canvasContext.lineTo(p[2].x, p[2].y)
+            canvasContext.lineTo(p[3].x, p[3].y)
+            canvasContext.closePath()
+        }
+        canvasContext.fill()
+    }
+
+    if (damagedGhosts.length > 0) {
+        canvasContext.globalAlpha = 0.28
+        canvasContext.fillStyle   = '#f78166'
+        canvasContext.beginPath()
+        for (let i = 0; i < damagedGhosts.length; i++) {
+            const p = damagedGhosts[i]
+            canvasContext.moveTo(p[0].x, p[0].y)
+            canvasContext.lineTo(p[1].x, p[1].y)
+            canvasContext.lineTo(p[2].x, p[2].y)
+            canvasContext.lineTo(p[3].x, p[3].y)
+            canvasContext.closePath()
+        }
+        canvasContext.fill()
+    }
+
+    // Draw mainCar with full detail
+    canvasContext.globalAlpha = 1
+    if (mainCar) {
+        mainCar.draw(canvasContext)
+        lastKnownY = mainCar.y
+        updateTheBestCar()
+    }
+
+    canvasContext.restore()
+
+    networkContext.lineDashOffset = -time / 50
+    Visualizer.drawNetwork(networkContext, mainCar ? mainCar.brain : bestBrain)
+
+    document.getElementById("live-generations").innerHTML = cars.length
+    requestAnimationFrame(animate)
 }
 
 function addHardStopObstacle() {
@@ -228,12 +337,15 @@ function addHardStopObstacle() {
     traffic.push(newCar)
 }
 
+// ─── Stats UI updater ────────────────────────────────────────────────
+
 function startStatsUpdater() {
     const timerEl    = document.getElementById('gen-timer')
     const progressEl = document.getElementById('survivors-progress')
 
     setInterval(() => {
-        // Timer
+        if (pause) return
+
         const elapsed  = Math.floor((Date.now() - generationStartTime) / 1000)
         const minutes  = Math.floor(elapsed / 60)
         const seconds  = elapsed % 60
@@ -241,7 +353,6 @@ function startStatsUpdater() {
             timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`
         }
 
-        // Survivor progress bar
         if (progressEl && cars) {
             const pct = Math.max(0, (cars.length / CAR_GENERATION_NUMBER) * 100)
             progressEl.style.width = pct + '%'
@@ -256,9 +367,23 @@ function startStatsUpdater() {
     }, 500)
 }
 
-document.onkeydown = (event) => {
-    if (event.key === "Escape") {
-        pause = !pause
-        animate()
+// ─── Pause control (single event listener — no conflicts) ────────────
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== "Escape") return
+    event.preventDefault()
+
+    if (!pause) {
+        pause = true
+        pauseStartTime = Date.now()
+    } else {
+        pause = false
+        // Shift generation start so timer doesn't jump
+        generationStartTime += Date.now() - pauseStartTime
+        // Only restart if no animate is already in flight (prevents loop duplication)
+        if (!animating) {
+            animating = true
+            requestAnimationFrame(animate)
+        }
     }
-}
+})

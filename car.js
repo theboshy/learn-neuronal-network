@@ -21,6 +21,13 @@ class Car {
         this.brain = new NeuralNetwork(
             [this.sensor.rayCount,  6, 4]
         )
+
+        // Lane-change state (only used by dummy traffic)
+        this.targetLane = null
+        this.turnSignal = null   // 'left' | 'right' | null
+        this.nextLaneCheckTime = (type === 'dummy' && color !== 'red')
+            ? Date.now() + getRandomNumberBetween(1500, 4500)
+            : Infinity
     }
     
     #assessDamage(borders, traffic) {
@@ -106,15 +113,75 @@ class Car {
          this.x-=Math.sin(this.rotationAngle) * this.speed
          this.y-=Math.cos(this.rotationAngle) * this.speed
     }
+
+    #maybeChangeLane() {
+        if (this.type !== 'dummy') return
+        if (this.color === 'red') return            // hard-stop obstacles stay put
+        if (this.targetLane !== null) return        // already mid-change
+        if (Date.now() < this.nextLaneCheckTime) return
+        if (typeof street === 'undefined') return
+
+        this.nextLaneCheckTime = Date.now() + getRandomNumberBetween(3000, 7000)
+
+        // 35% chance to actually change lanes when checking
+        if (Math.random() > 0.35) return
+
+        const currentLane = street.getLaneFromX(this.x)
+        const dir = Math.random() > 0.5 ? 1 : -1
+        const target = currentLane + dir
+        if (target < 0 || target >= street.laneCount) return
+
+        this.targetLane = target
+        this.turnSignal = dir < 0 ? 'left' : 'right'
+    }
+
+    #steerToTarget() {
+        if (this.targetLane === null) return
+        if (typeof street === 'undefined') return
+
+        const targetX = street.getLaneCenter(this.targetLane)
+        const dx = targetX - this.x
+
+        // Done: close to target AND facing straight
+        if (Math.abs(dx) < 1.5 && Math.abs(this.rotationAngle) < 0.03) {
+            this.targetLane = null
+            this.turnSignal = null
+            this.controls.left = false
+            this.controls.right = false
+            this.rotationAngle = 0
+            return
+        }
+
+        // Proportional controller: desired heading toward target
+        const maxAngle = 0.32
+        const desired = Math.max(
+            -maxAngle,
+            Math.min(maxAngle, -Math.atan(dx * 0.04))
+        )
+        const angleError = desired - this.rotationAngle
+
+        if (angleError > 0.01) {
+            this.controls.left = true
+            this.controls.right = false
+        } else if (angleError < -0.01) {
+            this.controls.right = true
+            this.controls.left = false
+        } else {
+            this.controls.left = false
+            this.controls.right = false
+        }
+    }
     
     update(streetBorders, traffic) {
         if (!this.damaged) {
+            this.#maybeChangeLane()
+            this.#steerToTarget()
             this.#directionControl()
             this.#speedControl()
             this.#move()
             this.polygon = this.#createPolygon()
             this.damaged = this.#assessDamage(streetBorders, traffic)
-            //this.y-=this.speed   
+            //this.y-=this.speed
         }
         if (this.sensor) {
             this.sensor.update(streetBorders, traffic)   
@@ -208,6 +275,21 @@ class Car {
         ctx.roundRect(-w / 2 - ww + 1,   h / 2 - 5 - wh, ww, wh, 1); // rear-left
         ctx.roundRect( w / 2 - 1,         h / 2 - 5 - wh, ww, wh, 1); // rear-right
         ctx.fill();
+
+        // Turn signal (blinking amber on the side of the turn)
+        if (this.turnSignal && !this.damaged) {
+            const blinkOn = (Math.floor(Date.now() / 280) % 2) === 0;
+            if (blinkOn) {
+                const sx = this.turnSignal === 'left' ? -w / 2 - 1 : w / 2 + 1;
+                ctx.shadowBlur  = 10;
+                ctx.shadowColor = '#ffb547';
+                ctx.fillStyle   = '#ffb547';
+                ctx.beginPath();
+                ctx.arc(sx, -h / 2 + 7, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
 
         ctx.restore();
 

@@ -78,29 +78,27 @@ class Sensors {
     }
     
     draw(context) {
-        if (this.rays !== undefined && this.rays.length > 0) {
-             for(let i = 0; i < this.rayCount; i++) {
+        if (!this.rays || this.rays.length === 0) return;
 
-                let end = this.rays[i][1]
-                if (this.readings[i]) {
-                    end = this.readings[i]
-                }
-                // Active portion: bright yellow-green
-                context.beginPath();
-                context.lineWidth   = 1.5;
-                context.strokeStyle = 'rgba(255, 240, 70, 0.85)';
-                context.moveTo(this.rays[i][0].x, this.rays[i][0].y);
-                context.lineTo(end.x, end.y);
-                context.stroke();
+        for (let i = 0; i < this.rayCount; i++) {
+            const reading = this.readings[i];
+            const end = reading ? reading : this.rays[i][1];
 
-                // Dead portion (beyond obstacle): muted red
+            // Single yellow ray from car to obstacle (or full extent)
+            context.beginPath();
+            context.lineWidth   = 1.5;
+            context.strokeStyle = 'rgba(255, 240, 70, 0.85)';
+            context.moveTo(this.rays[i][0].x, this.rays[i][0].y);
+            context.lineTo(end.x, end.y);
+            context.stroke();
+
+            // Small dot marker at obstacle hit point
+            if (reading) {
                 context.beginPath();
-                context.lineWidth   = 1.5;
-                context.strokeStyle = 'rgba(247, 129, 102, 0.45)';
-                context.moveTo(this.rays[i][1].x, this.rays[i][1].y);
-                context.lineTo(end.x, end.y);
-                context.stroke();
-            }   
+                context.fillStyle = 'rgba(247, 129, 102, 0.95)';
+                context.arc(end.x, end.y, 2.5, 0, Math.PI * 2);
+                context.fill();
+            }
         }
     }
 }
