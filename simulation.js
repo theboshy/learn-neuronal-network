@@ -54,6 +54,7 @@ class Simulation {
         this.#syncModelUI()
         this.#generationStartTime = Date.now()
         this.#startTrafficInterval()
+        this.#startObstacleInterval()
         this.#startCleanupInterval()
         this.#startStatsInterval()
         document.addEventListener('keydown', (e) => this.#handlePause(e))
@@ -294,6 +295,20 @@ class Simulation {
                 CAR_TYPE.TRAFFIC, 1, 'purple', false
             ))
         }, 2000)
+    }
+
+    #startObstacleInterval() {
+        const schedule = () => {
+            setTimeout(() => {
+                if (!this.#mainCar || this.#generationResetting || this.#pause) {
+                    schedule()
+                    return
+                }
+                this.addObstacle()
+                schedule()
+            }, getRandomNumberBetween(15000, 25000))
+        }
+        schedule()
     }
 
     #startCleanupInterval() {
