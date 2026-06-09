@@ -343,7 +343,7 @@ class BusVehicle extends Vehicle {
     }
 }
 
-// ─── Class map (used by Simulation#generateCars) ──────────────────────────────
+// ─── Class map ────────────────────────────────────────────────────────────────
 
 const VEHICLE_CLASS_MAP = {
     car:  CarVehicle,

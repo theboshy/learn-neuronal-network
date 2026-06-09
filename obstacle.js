@@ -39,7 +39,7 @@ class Obstacle {
         ]
     }
 
-    // No-op — obstacles don't move; signature matches Car.update so the traffic loop is uniform
+    // No-op — obstacles don't move
     update(_borders, _traffic) {}
 
     draw(ctx) {

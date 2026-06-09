@@ -1,5 +1,3 @@
-// Vehicle.#maybeChangeLane and #steerToTarget reference `street` as a free variable.
-// This module-level declaration makes it available globally (same as the old index.js did).
 let street
 
 class Simulation {
