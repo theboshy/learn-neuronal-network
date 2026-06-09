@@ -4,6 +4,8 @@ A neural-network-powered self-driving car simulation that learns by trial and er
 
 Built with vanilla HTML, CSS and JavaScript — no frameworks, no build step.
 
+**[▶ Open simulation](https://theboshy.github.io/learn-neuronal-network/) · [📄 Documentation](https://theboshy.github.io/learn-neuronal-network/docs/)**
+
 ## Run it
 
 Open `index.html` in any modern browser. That's it.
@@ -64,16 +66,17 @@ All hazards expose a polygon, so raycast sensors detect them just like other veh
 ```
 index.html               page + panel markup
 style.css                dark terminal theme
-index.js                 main loop, generation lifecycle, model switcher
-car.js                   car/moto/bus shape, physics, lane changes
+index.js                 bootstrap — creates Simulation and calls start()
+simulation.js            game loop, generation lifecycle, model switcher
+vehicles.js              Vehicle base class + CarVehicle, MotoVehicle, BusVehicle
+ray-sensor.js            raycast sensors
 obstacle.js              pothole / wreck / burning-trash hazards
-sensors.js               raycast sensors
 street.js                road, lanes, roadside decoration
 neural-network.js        feed-forward + mutation
 network-visualizer.js    live network diagram
 controls.js              input flags
 utils.js                 lerp, intersection, polygon collision
-consts.js                deltas, INFINITY, VEHICLE_MODELS
+consts.js                CAR_TYPE, VEHICLE_MODELS, shared constants
 ```
 
 ## Tech notes
