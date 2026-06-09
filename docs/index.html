@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural Self-Driving — Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0d1117;
+      --surface:    #161b22;
+      --surface-2:  #1c2128;
+      --border:     #30363d;
+      --text:       #e6edf3;
+      --muted:      #8b949e;
+      --accent:     #58a6ff;
+      --green:      #3fb950;
+      --red:        #f78166;
+      --amber:      #d29922;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* ── Layout ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 32px 0 24px;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 11px;
+      letter-spacing: .14em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .cta {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 8px 20px;
+      background: var(--accent);
+      color: #0d1117;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+
+    .cta:hover { opacity: .85; }
+
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      overflow-x: auto;
+    }
+
+    nav a {
+      display: inline-block;
+      padding: 12px 16px;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+    }
+
+    nav a:hover { color: var(--text); }
+
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    section { margin-bottom: 56px; }
+
+    h2 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h3 {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin: 24px 0 8px;
+    }
+
+    p { color: var(--muted); margin-bottom: 14px; }
+    p strong { color: var(--text); }
+
+    /* ── Cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .card-icon { font-size: 22px; margin-bottom: 8px; }
+    .card-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+    .card-meta { font-size: 11px; color: var(--muted); }
+
+    /* ── Network diagram ── */
+    .network-diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 28px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+
+    .layer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .layer-label {
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .node {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid;
+    }
+
+    .node-input  { border-color: var(--green);  background: rgba(63,185,80,.15); }
+    .node-hidden { border-color: var(--border); background: var(--surface-2); }
+    .node-output { border-color: var(--accent); background: rgba(88,166,255,.15); }
+
+    .connector {
+      flex: 1;
+      min-width: 28px;
+      height: 1px;
+      background: var(--border);
+      margin: 0 4px;
+      position: relative;
+      top: 14px;
+      align-self: flex-start;
+    }
+
+    .connector-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 28px 8px 0;
+    }
+
+    .conn-line {
+      height: 1px;
+      width: 40px;
+      background: var(--border);
+    }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th {
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--surface-2);
+      vertical-align: top;
+    }
+
+    td:first-child { color: var(--text); }
+
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Code ── */
+    pre, code {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 12px;
+    }
+
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      overflow-x: auto;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    code { color: var(--accent); }
+
+    /* ── File tree ── */
+    .filetree {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 20px;
+      margin-top: 12px;
+    }
+
+    .filetree-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--surface-2);
+      gap: 16px;
+    }
+
+    .filetree-row:last-child { border-bottom: none; }
+
+    .filename { color: var(--accent); font-size: 12px; white-space: nowrap; }
+    .filedesc { color: var(--muted); font-size: 11px; text-align: right; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid;
+      margin-right: 6px;
+    }
+
+    .badge-green  { border-color: var(--green);  color: var(--green); }
+    .badge-blue   { border-color: var(--accent);  color: var(--accent); }
+    .badge-amber  { border-color: var(--amber); color: var(--amber); }
+
+    /* ── Performance boxes ── */
+    .perf-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .perf-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      padding: 12px 14px;
+    }
+
+    .perf-box-title { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .perf-box-desc  { font-size: 11px; color: var(--muted); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">◈ Neural AI</div>
+  <h1>Neural Self-Driving</h1>
+  <p class="tagline">1000 cars. One neural network. Evolves by trial and error.</p>
+  <a class="cta" href="https://theboshy.github.io/learn-neuronal-network">▶ Open Simulation</a>
+</header>
+
+<nav>
+  <a href="#overview">Overview</a>
+  <a href="#how-it-works">How it works</a>
+  <a href="#vehicles">Vehicles</a>
+  <a href="#hazards">Hazards</a>
+  <a href="#controls">Controls</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#performance">Performance</a>
+</nav>
+
+<main>
+
+  <!-- Overview -->
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>
+      Neural Self-Driving is a browser-based simulation where a fleet of 1000 cars learn to navigate a road using
+      a feed-forward neural network. There are no hand-coded rules — cars discover how to steer, avoid traffic,
+      and dodge obstacles entirely through <strong>neuroevolution</strong>: mutate, crash, repeat.
+    </p>
+    <p>
+      Built with <strong>plain HTML, CSS, and JavaScript</strong> — no frameworks, no build step, no dependencies.
+      Open <code>index.html</code> in any modern browser and it runs immediately.
+    </p>
+    <p>
+      <span class="badge badge-green">Vanilla JS</span>
+      <span class="badge badge-blue">No build step</span>
+      <span class="badge badge-amber">localStorage persistence</span>
+    </p>
+  </section>
+
+  <!-- How it works -->
+  <section id="how-it-works">
+    <h2>How it works</h2>
+
+    <h3>Neuroevolution loop</h3>
+    <p>
+      Every generation starts with 1000 cars placed at the same position, each carrying a mutated copy of the
+      previous generation's best brain. Cars that crash or stop are removed. When the last survivor crashes,
+      the generation ends, the best brain is saved to <code>localStorage</code>, and a new generation begins.
+    </p>
+
+    <h3>Sensor → Brain → Wheels</h3>
+    <p>
+      Each car casts <strong>10 rays</strong> in a 90° arc ahead. Ray lengths (normalized 0–1) feed into a
+      three-layer neural network. Four output neurons drive the wheels.
+    </p>
+
+    <div class="network-diagram" aria-label="Network architecture: 10 sensors → 6 hidden → 4 outputs">
+      <div class="layer">
+        <div class="layer-label">Sensors</div>
+        <div class="node node-input"></div>
+        <div class="node node-input"></div>
+        <div class="node node-input"></div>
+        <div class="node node-input"></div>
+        <div class="node node-input"></div>
+        <div class="node node-input"></div>
+        <div class="node node-input"></div>
+        <div class="node node-input"></div>
+        <div class="node node-input"></div>
+        <div class="node node-input"></div>
+      </div>
+      <div class="connector-group">
+        <div class="conn-line"></div><div class="conn-line"></div><div class="conn-line"></div>
+        <div class="conn-line"></div><div class="conn-line"></div><div class="conn-line"></div>
+        <div class="conn-line"></div><div class="conn-line"></div><div class="conn-line"></div>
+        <div class="conn-line"></div>
+      </div>
+      <div class="layer">
+        <div class="layer-label">Hidden</div>
+        <div style="height:27px"></div>
+        <div class="node node-hidden"></div>
+        <div class="node node-hidden"></div>
+        <div class="node node-hidden"></div>
+        <div class="node node-hidden"></div>
+        <div class="node node-hidden"></div>
+        <div class="node node-hidden"></div>
+      </div>
+      <div class="connector-group">
+        <div class="conn-line"></div><div class="conn-line"></div><div class="conn-line"></div>
+        <div class="conn-line"></div><div class="conn-line"></div><div class="conn-line"></div>
+      </div>
+      <div class="layer">
+        <div class="layer-label">Drive</div>
+        <div style="height:54px"></div>
+        <div class="node node-output"></div>
+        <div class="node node-output"></div>
+        <div class="node node-output"></div>
+        <div class="node node-output"></div>
+      </div>
+    </div>
+
+    <h3>Mutation</h3>
+    <p>
+      The best brain is deep-cloned for every car in the next generation. Each clone has a small random
+      perturbation applied to its weights and biases (<strong>mutation rate: 10%</strong>). Over many generations
+      the fleet converges on a brain that can navigate further and further without crashing.
+    </p>
+
+    <h3>Brain persistence</h3>
+    <p>
+      Each vehicle model stores its best brain independently in <code>localStorage</code>. Closing and
+      reopening the tab resumes training from where it left off. The stored payload includes the brain weights,
+      biases, and the generation number.
+    </p>
+  </section>
+
+  <!-- Vehicles -->
+  <section id="vehicles">
+    <h2>Vehicles</h2>
+    <p>
+      Three trainable vehicle shapes, each with its own dimensions, top speed, and independent brain in
+      <code>localStorage</code>. Switching the model tab resets the simulation and loads that vehicle's
+      saved brain (or starts fresh if none exists).
+    </p>
+    <p>
+      All models share the same network architecture — <strong>[10, 6, 4]</strong> — so brains are
+      structurally compatible even across models.
+    </p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🚗</div>
+        <div class="card-title">Car</div>
+        <div class="card-meta">30 × 50 px &nbsp;·&nbsp; max speed 3.0<br>Default model. Traffic always uses this shape.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏍️</div>
+        <div class="card-title">Moto</div>
+        <div class="card-meta">16 × 38 px &nbsp;·&nbsp; max speed 3.6<br>Narrower hitbox, fastest top speed.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🚌</div>
+        <div class="card-title">Bus</div>
+        <div class="card-meta">38 × 95 px &nbsp;·&nbsp; max speed 2.4<br>Largest hitbox, slowest — hardest to train.</div>
+      </div>
+    </div>
+
+    <h3>Lane-change AI</h3>
+    <p>
+      In addition to the neural network, the lead car runs a secondary lane-change planner. It periodically
+      checks adjacent lanes for clearance and executes smooth lateral moves with turn signals. This runs
+      on top of the network outputs, not instead of them.
+    </p>
+  </section>
+
+  <!-- Hazards -->
+  <section id="hazards">
+    <h2>Hazards</h2>
+    <p>
+      Obstacles are spawned automatically every 5–10 seconds in a random lane ahead of the lead car.
+      You can also spawn one manually via the sidebar button. Each obstacle type has its own hitbox and
+      canvas drawing — sensors detect them the same way as traffic vehicles.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Hitbox</th>
+          <th>Visual</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pothole</td>
+          <td>26 × 20</td>
+          <td>Dark ellipse with radial inner shadow and scattered asphalt chunks</td>
+        </tr>
+        <tr>
+          <td>Wreck + cones</td>
+          <td>38 × 52</td>
+          <td>Tilted rusted car body, blown windows, surrounded by 4 traffic cones</td>
+        </tr>
+        <tr>
+          <td>Burning trash</td>
+          <td>22 × 24</td>
+          <td>Dark pile with pulsing radial halo and glowing hot core</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Controls -->
+  <section id="controls">
+    <h2>Controls</h2>
+    <table>
+      <thead>
+        <tr><th>Action</th><th>How</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Switch vehicle model</td><td>Sidebar → Vehicle tabs (🚗 🏍️ 🚌)</td></tr>
+        <tr><td>Save best brain</td><td>Sidebar → Save Brain</td></tr>
+        <tr><td>Reset training</td><td>Sidebar → Reset Brain (clears localStorage for current model)</td></tr>
+        <tr><td>Spawn random hazard</td><td>Sidebar → Add Obstacle</td></tr>
+        <tr><td>Pause / resume</td><td><code>ESC</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Generation overlay</h3>
+    <p>
+      When all cars in a generation crash, an overlay briefly shows the generation number and confirms
+      the brain was saved. The next generation starts automatically after 2.5 seconds.
+    </p>
+  </section>
+
+  <!-- Architecture -->
+  <section id="architecture">
+    <h2>Architecture</h2>
+    <p>
+      The codebase uses plain ES6 classes loaded via <code>&lt;script&gt;</code> tags in dependency order.
+      No bundler, no modules.
+    </p>
+
+    <div class="filetree">
+      <div class="filetree-row"><span class="filename">simulation.js</span><span class="filedesc">Game loop, generation lifecycle, persistence, UI</span></div>
+      <div class="filetree-row"><span class="filename">vehicles.js</span><span class="filedesc">Vehicle base class + CarVehicle, MotoVehicle, BusVehicle</span></div>
+      <div class="filetree-row"><span class="filename">ray-sensor.js</span><span class="filedesc">10-ray forward sensor with intersection math</span></div>
+      <div class="filetree-row"><span class="filename">neural-network.js</span><span class="filedesc">Feed-forward network + weight mutation</span></div>
+      <div class="filetree-row"><span class="filename">network-visualizer.js</span><span class="filedesc">Live network diagram drawn on the right canvas</span></div>
+      <div class="filetree-row"><span class="filename">obstacle.js</span><span class="filedesc">Three obstacle types with canvas rendering</span></div>
+      <div class="filetree-row"><span class="filename">street.js</span><span class="filedesc">Road geometry, lane math, roadside decoration</span></div>
+      <div class="filetree-row"><span class="filename">controls.js</span><span class="filedesc">Keyboard input flags per car</span></div>
+      <div class="filetree-row"><span class="filename">consts.js</span><span class="filedesc">CAR_TYPE enum, VEHICLE_MODELS, shared constants</span></div>
+      <div class="filetree-row"><span class="filename">utils.js</span><span class="filedesc">lerp, segment intersection, polygon collision</span></div>
+      <div class="filetree-row"><span class="filename">index.js</span><span class="filedesc">Bootstrap — creates Simulation and calls start()</span></div>
+    </div>
+
+    <h3>Class hierarchy</h3>
+    <p>
+      <code>Vehicle</code> is an abstract base class that owns physics, polygon collision, sensors, brain
+      wiring, and the shared draw pass. Each subclass implements two hooks:
+      <code>_drawDetails(ctx)</code> for interior details (windshield, windows, etc.) and
+      <code>_drawWheels(ctx, w, h)</code> for wheel placement. Calling either hook on the base class
+      throws at runtime, making missing overrides immediately visible.
+    </p>
+
+    <pre>Vehicle (base)
+├─ CarVehicle   — windshield, rear window, roof strip, 4 wheels
+├─ MotoVehicle  — seat stripe, handlebar, headlight, 2 inline wheels
+└─ BusVehicle   — front windshield, 5 side windows, rear bumper, 6 wheels</pre>
+  </section>
+
+  <!-- Performance -->
+  <section id="performance">
+    <h2>Performance</h2>
+    <p>Running 1000 simultaneous physics simulations per frame requires a few deliberate choices.</p>
+
+    <div class="perf-grid">
+      <div class="perf-box">
+        <div class="perf-box-title">Batched ghost rendering</div>
+        <div class="perf-box-desc">Ghost cars are never drawn individually. Their polygons are collected each frame and painted in two single fills — one for alive (green) and one for damaged (red). This replaces ~1000 draw calls with 2.</div>
+      </div>
+      <div class="perf-box">
+        <div class="perf-box-title">Off-screen culling</div>
+        <div class="perf-box-desc">Cars outside the visible viewport are skipped during rendering. Physics still runs for all cars so their brains stay comparable, but no canvas work is done for off-screen ghosts.</div>
+      </div>
+      <div class="perf-box">
+        <div class="perf-box-title">Single-pass best car</div>
+        <div class="perf-box-desc">The lead car (furthest ahead) is found in a single linear scan each frame. No sorting, no array spread — one loop, one comparison.</div>
+      </div>
+      <div class="perf-box">
+        <div class="perf-box-title">Lazy brain cloning</div>
+        <div class="perf-box-desc">The best brain is deep-cloned only when the lead car changes, not every frame. This avoids ~60 JSON round-trips per second.</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Neural Self-Driving &nbsp;·&nbsp; <a href="https://github.com/theboshy/learn-neuronal-network" style="color:var(--accent);text-decoration:none;">github.com/theboshy/learn-neuronal-network</a>
+</footer>
+
+</body>
+</html>
