@@ -22,13 +22,13 @@
       <div class="panel-section">
         <div class="section-title">Vehicle</div>
         <div class="model-tabs">
-          <button class="model-tab" data-model="car"  onclick="setModel('car')">🚗</button>
-          <button class="model-tab" data-model="moto" onclick="setModel('moto')">🏍️</button>
-          <button class="model-tab" data-model="bus"  onclick="setModel('bus')">🚌</button>
+          <button class="model-tab" data-model="car"  onclick="sim.setModel('car')">🚗</button>
+          <button class="model-tab" data-model="moto" onclick="sim.setModel('moto')">🏍️</button>
+          <button class="model-tab" data-model="bus"  onclick="sim.setModel('bus')">🚌</button>
         </div>
         <div class="stat-row" style="margin-top:4px">
           <span class="stat-label">USING</span>
-          <span class="stat-value" id="current-model-name" style="font-size:11px">Auto</span>
+          <span class="stat-value" id="current-model-name" style="font-size:11px">Car</span>
         </div>
       </div>
 
@@ -53,13 +53,13 @@
 
       <div class="panel-section">
         <div class="section-title">Controls</div>
-        <button onclick="save()">
+        <button onclick="sim.save()">
           <span class="btn-icon">▶</span>Save Brain
         </button>
-        <button onclick="discard()">
+        <button onclick="sim.discard()">
           <span class="btn-icon">↺</span>Reset Brain
         </button>
-        <button onclick="addObstacle()">
+        <button onclick="sim.addObstacle()">
           <span class="btn-icon">+</span>Add Obstacle
         </button>
       </div>
@@ -73,12 +73,10 @@
     <div id="toast"></div>
 
     <script src="./utils.js" charset="utf-8"></script>
-    <script src="./controls.js" charset="utf-8"></script>
-    <script src="./sensors.js" charset="utf-8"></script>
     <script src="./ray-sensor.js" charset="utf-8"></script>
     <script src="./street.js" charset="utf-8"></script>
     <script src="./consts.js" charset="utf-8"></script>
-    <script src="./car.js" charset="utf-8"></script>
+    <script src="./controls.js" charset="utf-8"></script>
     <script src="./vehicles.js" charset="utf-8"></script>
     <script src="./obstacle.js" charset="utf-8"></script>
     <script src="./neural-network.js" charset="utf-8"></script>
