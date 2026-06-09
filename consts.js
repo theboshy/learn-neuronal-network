@@ -32,3 +32,9 @@ const VEHICLE_MODELS = {
 }
 
 const SELECTED_MODEL_KEY = 'selected-model'
+
+const CAR_TYPE = {
+    MAIN:    'main',
+    GHOST:   'ghost',
+    TRAFFIC: 'traffic',
+}
