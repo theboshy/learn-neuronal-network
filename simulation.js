@@ -6,6 +6,7 @@ class Simulation {
 
     #pause = false
     #pauseStartTime = 0
+    #hiddenPaused = false
     #animating = false
     #generationCount = 1
     #bestBrain = null
@@ -56,6 +57,7 @@ class Simulation {
         this.#startCleanupInterval()
         this.#startStatsInterval()
         document.addEventListener('keydown', (e) => this.#handlePause(e))
+        document.addEventListener('visibilitychange', () => this.#handleVisibility())
         requestAnimationFrame((t) => this.#animate(t))
     }
 
@@ -345,6 +347,26 @@ class Simulation {
                     'var(--green)'
             }
         }, 500)
+    }
+
+    #handleVisibility() {
+        if (document.hidden) {
+            if (!this.#pause) {
+                this.#pause = true
+                this.#pauseStartTime = Date.now()
+                this.#hiddenPaused = true
+            }
+        } else {
+            if (this.#hiddenPaused) {
+                this.#hiddenPaused = false
+                this.#pause = false
+                this.#generationStartTime += Date.now() - this.#pauseStartTime
+                if (!this.#animating) {
+                    this.#animating = true
+                    requestAnimationFrame((t) => this.#animate(t))
+                }
+            }
+        }
     }
 
     #handlePause(event) {
