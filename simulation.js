@@ -306,7 +306,7 @@ class Simulation {
                 }
                 this.addObstacle()
                 schedule()
-            }, getRandomNumberBetween(15000, 25000))
+            }, getRandomNumberBetween(5000, 10000))
         }
         schedule()
     }
